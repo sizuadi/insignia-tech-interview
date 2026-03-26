@@ -1,0 +1,548 @@
+{
+  "info": {
+    "name": "Discord Webhook Task Scheduler",
+    "description": "Complete API collection for the Discord Webhook Task Scheduler app.\n\n## Live API\nhttps://api-insignia-tech-intv.sizu.dev\n\n## Setup\n1. Set the `baseUrl` variable to your backend URL\n   - **Production**: `https://api-insignia-tech-intv.sizu.dev`\n   - **Local**: `http://localhost:4000`\n2. Register or login — the collection auto-saves `accessToken` and `refreshToken` via test scripts.\n3. All protected routes automatically use the saved `accessToken`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api-insignia-tech-intv.sizu.dev",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — register, login, refresh token, logout.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"username\": \"myuser\",\n  \"password\": \"secret123\"\n}"
+            },
+            "description": "Create a new user account.\n\n**Body**\n- `username` (string, required) — min 3 characters, must be unique\n- `password` (string, required) — min 6 characters\n\n**Returns** `201` with the new user object."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User registered successfully\",\n  \"data\": {\n    \"id\": \"cuid_here\",\n    \"username\": \"myuser\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "409 Username Taken",
+              "status": "Conflict",
+              "code": 409,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"CONFLICT\", \"message\": \"Username already exists\" }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"username\": \"myuser\",\n  \"password\": \"secret123\"\n}"
+            },
+            "description": "Login and receive JWT tokens.\n\n**Body**\n- `username` (string, required)\n- `password` (string, required)\n\n**Returns** `accessToken` (expires 15m) and `refreshToken` (expires 7d).\n\n> The test script automatically saves both tokens to collection variables."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"user\": {\n      \"id\": \"cuid_here\",\n      \"username\": \"myuser\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Invalid Credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"UNAUTHORIZED\", \"message\": \"Invalid credentials\" }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "  console.log('Tokens refreshed');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "description": "Exchange a valid refresh token for a new access token and refresh token pair.\n\n**Body**\n- `refreshToken` (string, required) — the refresh token from login\n\n**Returns** new `accessToken` and `refreshToken`. The old refresh token is invalidated.\n\n> The test script automatically updates the collection variables."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            },
+            {
+              "name": "401 Invalid Token",
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"UNAUTHORIZED\", \"message\": \"Invalid or expired refresh token\" }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "description": "Logout and revoke the refresh token stored in the database.\n\n**Body**\n- `refreshToken` (string, optional) — if provided, the token is revoked in the DB\n\nAlways returns `200` regardless of token validity."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "description": "Task management endpoints. All require a valid Bearer token.\n\nAdd `Authorization: Bearer {{accessToken}}` header (already set via collection auth).",
+      "item": [
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter tasks by name (case-insensitive, partial match)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve all tasks for the authenticated user with pagination and optional search.\n\n**Query params**\n- `page` (int, optional, default `1`) — page number\n- `limit` (int, optional, default `10`, max `100`) — items per page\n- `search` (string, optional) — filters task names (case-insensitive, partial match)\n\n**Returns** tasks array + pagination metadata."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"cuid_here\",\n      \"userId\": \"cuid_here\",\n      \"name\": \"Daily Standup Reminder\",\n      \"schedule\": \"0 9 * * 1-5\",\n      \"webhookUrl\": \"https://discord.com/api/webhooks/...\",\n      \"payloadJson\": { \"content\": \"Standup time!\", \"username\": \"Task Bot\" },\n      \"maxRetry\": 3,\n      \"status\": \"ACTIVE\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 1,\n    \"pages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Tasks (with search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=1&limit=10&search=standup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "search", "value": "standup", "description": "Search keyword" }
+              ]
+            },
+            "description": "Example of searching tasks by name keyword."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('taskId', json.data.id);",
+                  "  console.log('Task ID saved: ' + json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Daily Standup Reminder\",\n  \"schedule\": \"0 9 * * 1-5\",\n  \"webhookUrl\": \"https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN\",\n  \"maxRetry\": 3,\n  \"payloadJson\": {\n    \"content\": \"Time for standup! 🚀\",\n    \"username\": \"Task Bot\",\n    \"embeds\": [\n      {\n        \"title\": \"Daily Standup\",\n        \"description\": \"Don't forget your standup meeting!\",\n        \"color\": 3066993\n      }\n    ]\n  }\n}"
+            },
+            "description": "Create a new scheduled task.\n\n**Body**\n- `name` (string, required) — display name for the task\n- `schedule` (string, required) — cron expression (e.g. `0 9 * * 1-5` = 9am weekdays)\n- `webhookUrl` (string, required) — full Discord webhook URL\n- `payloadJson` (object, required) — Discord webhook payload. Must include `content` or `embeds`. Follows the [Discord Webhook API format](https://discord.com/developers/docs/resources/webhook#execute-webhook)\n- `maxRetry` (int, optional, default `3`) — number of retry attempts on failure (0–10)\n\n**Cron format:** `minute hour day month weekday`\n- `* * * * *` — every minute\n- `0 9 * * 1-5` — 9:00 AM Monday–Friday\n- `0 0 * * *` — midnight every day\n- `*/5 * * * *` — every 5 minutes\n\n> The test script saves the new task's `id` to `{{taskId}}` collection variable."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Task created successfully\",\n  \"data\": {\n    \"id\": \"cuid_here\",\n    \"userId\": \"cuid_here\",\n    \"name\": \"Daily Standup Reminder\",\n    \"schedule\": \"0 9 * * 1-5\",\n    \"webhookUrl\": \"https://discord.com/api/webhooks/...\",\n    \"payloadJson\": {\n      \"content\": \"Time for standup! 🚀\",\n      \"username\": \"Task Bot\",\n      \"embeds\": [{ \"title\": \"Daily Standup\", \"description\": \"...\", \"color\": 3066993 }]\n    },\n    \"maxRetry\": 3,\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Missing Fields",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"VALIDATION_ERROR\", \"message\": \"name, schedule, webhookUrl, and payloadJson are required\" }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Task by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            },
+            "description": "Retrieve a single task by ID.\n\n**Path param**\n- `id` (string, required) — task CUID\n\nOnly returns tasks belonging to the authenticated user."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"cuid_here\",\n    \"name\": \"Daily Standup Reminder\",\n    \"schedule\": \"0 9 * * 1-5\",\n    \"webhookUrl\": \"https://discord.com/api/webhooks/...\",\n    \"payloadJson\": { \"content\": \"Time for standup!\" },\n    \"maxRetry\": 3,\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"NOT_FOUND\", \"message\": \"Task not found\" }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"name\": \"Updated Standup Reminder\",\n  \"schedule\": \"0 10 * * 1-5\",\n  \"webhookUrl\": \"https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN\",\n  \"maxRetry\": 5,\n  \"payloadJson\": {\n    \"content\": \"Standup at 10am! ☕\",\n    \"username\": \"Scheduler Bot\",\n    \"embeds\": [\n      {\n        \"title\": \"Morning Standup\",\n        \"description\": \"Time to sync with the team.\",\n        \"color\": 5814783\n      }\n    ]\n  }\n}"
+            },
+            "description": "Update an existing task. All fields are optional — only send what you want to change.\n\n**Path param**\n- `id` (string, required) — task CUID\n\n**Body** (all optional)\n- `name` (string)\n- `schedule` (string) — cron expression\n- `webhookUrl` (string)\n- `payloadJson` (object) — Discord webhook payload\n- `maxRetry` (int, 0–10)\n\nIf `schedule` is changed and the task is ACTIVE, the scheduler is updated immediately."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Task updated successfully\",\n  \"data\": {\n    \"id\": \"cuid_here\",\n    \"name\": \"Updated Standup Reminder\",\n    \"schedule\": \"0 10 * * 1-5\",\n    \"status\": \"ACTIVE\",\n    \"updatedAt\": \"2024-01-02T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Toggle Task (Pause / Resume)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}", "toggle"]
+            },
+            "description": "Toggle a task between ACTIVE and PAUSED.\n\n**Path param**\n- `id` (string, required) — task CUID\n\n**No request body needed.**\n\n- If currently ACTIVE → becomes PAUSED (scheduler stops)\n- If currently PAUSED → becomes ACTIVE (scheduler restarts)"
+          },
+          "response": [
+            {
+              "name": "200 Paused",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Task paused successfully\",\n  \"data\": {\n    \"id\": \"cuid_here\",\n    \"status\": \"PAUSED\"\n  }\n}"
+            },
+            {
+              "name": "200 Resumed",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Task resumed successfully\",\n  \"data\": {\n    \"id\": \"cuid_here\",\n    \"status\": \"ACTIVE\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            },
+            "description": "Permanently delete a task and all its execution logs.\n\n**Path param**\n- `id` (string, required) — task CUID\n\nAlso removes the task from the cron scheduler immediately."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Task deleted successfully\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"NOT_FOUND\", \"message\": \"Task not found\" }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "description": "Execution log endpoints. All require a valid Bearer token.",
+      "item": [
+        {
+          "name": "Get All Logs (all tasks)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Page number (default: 1)" },
+                { "key": "limit", "value": "20", "description": "Items per page (default: 20)" }
+              ]
+            },
+            "description": "Retrieve all execution logs across all tasks for the authenticated user.\n\n**Query params**\n- `page` (int, optional, default `1`)\n- `limit` (int, optional, default `20`)\n\nEach log entry includes the parent task name."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"cuid_here\",\n      \"taskId\": \"cuid_here\",\n      \"executionTime\": \"2024-01-01T09:00:00.000Z\",\n      \"status\": \"SUCCESS\",\n      \"retryCount\": 0,\n      \"message\": \"Webhook delivered successfully\",\n      \"createdAt\": \"2024-01-01T09:00:01.000Z\",\n      \"task\": { \"name\": \"Daily Standup Reminder\" }\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 42,\n    \"pages\": 3\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Logs by Task",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/{{taskId}}?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs", "{{taskId}}"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Page number (default: 1)" },
+                { "key": "limit", "value": "10", "description": "Items per page (default: 10, max: 100)" }
+              ]
+            },
+            "description": "Retrieve execution logs for a specific task.\n\n**Path param**\n- `taskId` (string, required) — task CUID\n\n**Query params**\n- `page` (int, optional, default `1`)\n- `limit` (int, optional, default `10`, max `100`)\n\nLog status values: `SUCCESS`, `FAILED`, `RETRYING`"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"cuid_here\",\n      \"taskId\": \"cuid_here\",\n      \"executionTime\": \"2024-01-01T09:00:00.000Z\",\n      \"status\": \"FAILED\",\n      \"retryCount\": 2,\n      \"message\": \"HTTP 429: Too Many Requests\",\n      \"createdAt\": \"2024-01-01T09:00:01.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 5,\n    \"pages\": 1\n  }\n}"
+            },
+            {
+              "name": "404 Task Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": { \"code\": \"NOT_FOUND\", \"message\": \"Task not found\" }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard summary endpoint. Requires a valid Bearer token.",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            },
+            "description": "Retrieve summary counts and the 5 most recent execution logs for the authenticated user.\n\n**Returns**\n- `summary.total` — total number of tasks\n- `summary.active` — tasks with status ACTIVE\n- `summary.paused` — tasks with status PAUSED\n- `summary.failed` — tasks with status FAILED\n- `recentLogs` — last 5 execution log entries (newest first), each including the parent task name"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"summary\": {\n      \"total\": 8,\n      \"active\": 5,\n      \"paused\": 2,\n      \"failed\": 1\n    },\n    \"recentLogs\": [\n      {\n        \"id\": \"cuid_here\",\n        \"taskId\": \"cuid_here\",\n        \"executionTime\": \"2024-01-01T09:00:00.000Z\",\n        \"status\": \"SUCCESS\",\n        \"retryCount\": 0,\n        \"message\": \"Webhook delivered successfully\",\n        \"createdAt\": \"2024-01-01T09:00:01.000Z\",\n        \"task\": { \"name\": \"Daily Standup Reminder\" }\n      }\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
